@@ -1,4 +1,20 @@
 /**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function hasNumericValue(value) {
+  return value !== '' && value !== null && value !== undefined
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isIntegerValue(value) {
+  return hasNumericValue(value) && Number.isInteger(Number(value))
+}
+
+/**
  * Valida una entrada plana del problema.
  *
  * @param {object} problemInput
@@ -14,7 +30,7 @@ export function validateProblemInput(problemInput) {
     }
   }
 
-  if (!Number.isInteger(Number(problemInput.capacity)) || Number(problemInput.capacity) <= 0) {
+  if (!isIntegerValue(problemInput.capacity) || Number(problemInput.capacity) <= 0) {
     errors.push('La capacidad debe ser un entero positivo.')
   }
 
@@ -22,11 +38,11 @@ export function validateProblemInput(problemInput) {
     errors.push('Debe ingresar al menos un objeto.')
   } else {
     problemInput.items.forEach((item, index) => {
-      if (!Number.isInteger(Number(item.weight)) || Number(item.weight) <= 0) {
+      if (!isIntegerValue(item.weight) || Number(item.weight) <= 0) {
         errors.push(`El peso del objeto ${index + 1} debe ser un entero positivo.`)
       }
 
-      if (!Number.isInteger(Number(item.value)) || Number(item.value) < 0) {
+      if (!isIntegerValue(item.value) || Number(item.value) < 0) {
         errors.push(`El valor del objeto ${index + 1} debe ser un entero no negativo.`)
       }
     })
@@ -53,6 +69,7 @@ export function validateConstraints(constraints) {
   }
 
   if (
+    !hasNumericValue(constraints.timeLimitSeconds) ||
     !Number.isFinite(Number(constraints.timeLimitSeconds)) ||
     Number(constraints.timeLimitSeconds) <= 0
   ) {
@@ -64,4 +81,3 @@ export function validateConstraints(constraints) {
     errors,
   }
 }
-

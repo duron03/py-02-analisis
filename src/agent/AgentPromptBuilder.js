@@ -1,65 +1,92 @@
 /**
- * Construye los prompts que recibe el agente real de Gemini.
+ * Construye los mensajes que recibe el agente externo.
  */
 export class AgentPromptBuilder {
   /**
-   * Instrucciones del sistema — van en systemInstruction de la API de Gemini.
-   *
    * @returns {string}
    */
   buildSystemPrompt() {
     return [
-      'Eres un agente experto en algoritmos para el problema de la mochila 0/1.',
-      'Tu única tarea es seleccionar el algoritmo más adecuado para un problema dado.',
+      'Eres un agente especializado en seleccionar algoritmos para el problema de la mochila 0/1.',
+      'Tu tarea es escoger el algoritmo local mas conveniente segun los datos del problema.',
+      'Algoritmos disponibles: backtracking, dynamic-programming, greedy.',
       '',
-      'Algoritmos disponibles:',
-      '- backtracking: solución exacta. Complejidad O(2^N). Solo viable con N <= 15 aproximadamente.',
-      '- dynamic-programming: solución exacta. Complejidad O(N * W). Viable cuando W <= 5000.',
-      '- greedy: solución aproximada por densidad (valor/peso). Complejidad O(N log N). Siempre rápido, no garantiza optimalidad.',
+      'backtracking: exacto, O(2^N). Conviene solo con N pequeno.',
+      'dynamic-programming: exacto, O(N * W). Conviene cuando W es manejable.',
+      'greedy: aproximado por densidad valor/peso, O(N log N). Conviene para velocidad.',
       '',
-      'Reglas de decisión:',
-      '- priority = "speed": siempre usar greedy.',
-      '- priority = "accuracy" y N <= 15: preferir backtracking.',
-      '- priority = "accuracy" y N > 15 y W <= 5000: preferir dynamic-programming.',
-      '- priority = "accuracy" y N > 15 y W > 5000: usar greedy (evitar memoria excesiva).',
+      'Reglas generales:',
+      '- Si la prioridad es speed, favorece greedy.',
+      '- Si la prioridad es accuracy y N es pequeno, puedes usar backtracking.',
+      '- Si la prioridad es accuracy y W es razonable, puedes usar dynamic-programming.',
+      '- Evita backtracking cuando N sea grande.',
+      '- Evita dynamic-programming cuando W haga muy costosa la tabla.',
       '',
-      'Para estimatedTimeMs y estimatedOperations usa estas fórmulas:',
-      '- backtracking: operaciones = 2^N, tiempo = max(1, round(2^N / 1000))',
-      '- dynamic-programming: operaciones = N * W, tiempo = max(1, round(N * W / 1000))',
-      '- greedy: operaciones = N * log2(N), tiempo = 1',
+      'Para estimar operaciones usa estas referencias:',
+      '- backtracking: 2^N',
+      '- dynamic-programming: N * W',
+      '- greedy: N * log2(N)',
       '',
-      'Responde ÚNICAMENTE con un objeto JSON válido con esta forma exacta:',
+      'Responde unicamente con JSON valido y sin texto adicional.',
+      'selectedAlgorithm solo puede ser "backtracking", "dynamic-programming" o "greedy".',
+      'Formato esperado:',
       '{',
-      '  "selectedAlgorithm": "backtracking" | "dynamic-programming" | "greedy",',
-      '  "estimatedTimeMs": <entero>,',
-      '  "estimatedOperations": <entero>,',
-      '  "confidence": <número entre 0.0 y 1.0>,',
-      '  "reason": "<una o dos oraciones explicando la decisión>"',
+      '  "selectedAlgorithm": "dynamic-programming",',
+      '  "estimatedTimeMs": 0,',
+      '  "estimatedOperations": 0,',
+      '  "confidence": 0.0,',
+      '  "reason": "explicacion breve"',
       '}',
-      '',
-      'No incluyas texto fuera del JSON.',
-    ].join('\n')
+    ].join(' ')
   }
 
   /**
-   * Mensaje del usuario — va en contents[0].parts[0].text de la API de Gemini.
-   *
-   * @param {object} agentRequest - Creado con createAgentRequest()
+   * @returns {string}
+   */
+  buildResultSystemPrompt() {
+    return [
+      'Eres un agente que explica resultados de una ejecucion local del problema de la mochila 0/1.',
+      'Recibiras la decision inicial del agente, la solucion local y la comparacion entre estimaciones y mediciones reales.',
+      'Explica si la estimacion fue razonable, que tipo de solucion se obtuvo y que recomendacion queda para otro intento.',
+      'Responde unicamente con JSON valido y sin texto adicional.',
+      'Formato exacto:',
+      '{',
+      '  "summary": "resumen del resultado",',
+      '  "estimateComparison": "comparacion entre estimado y real",',
+      '  "resultQuality": "comentario sobre optimalidad o heuristica",',
+      '  "recommendation": "siguiente recomendacion practica"',
+      '}',
+    ].join(' ')
+  }
+
+  /**
+   * @param {object} agentRequest
    * @returns {string}
    */
   buildUserPrompt(agentRequest) {
     const { problem, constraints } = agentRequest
-    const N = problem.items?.length ?? 0
-    const W = problem.capacity ?? 0
+    const itemCount = problem.items?.length || 0
+    const capacity = problem.capacity || 0
 
     return [
-      `Número de objetos (N): ${N}`,
-      `Capacidad de la mochila (W): ${W}`,
-      `Prioridad del usuario: ${constraints.priority}`,
-      `Tiempo límite: ${constraints.timeLimitSeconds} segundos`,
+      `N: ${itemCount}`,
+      `W: ${capacity}`,
+      `Prioridad: ${constraints.priority}`,
+      `Tiempo limite en segundos: ${constraints.timeLimitSeconds}`,
       '',
-      'Datos completos:',
+      'Datos completos en JSON:',
       JSON.stringify(agentRequest, null, 2),
+    ].join('\n')
+  }
+
+  /**
+   * @param {object} resultRequest
+   * @returns {string}
+   */
+  buildResultPrompt(resultRequest) {
+    return [
+      'Resultado completo de la ejecucion local:',
+      JSON.stringify(resultRequest, null, 2),
     ].join('\n')
   }
 }
