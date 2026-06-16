@@ -1,0 +1,61 @@
+:root {
+  --color-bg: #ffffff;
+  --color-page: #f4f6f8;
+  --color-text: #1f2933;
+  --color-muted: #6b7280;
+  --color-border: #d1d5db;
+  --color-border-strong: #b7c0cb;
+  --color-soft: #f6f7f8;
+  --color-surface: #ffffff;
+  --color-primary: #2f3437;
+  --color-primary-hover: #1f2326;
+  --color-primary-soft: #fbfcfd;
+  --color-estimate: #2563eb;
+  --color-info: #0f766e;
+  --color-warning: #d97706;
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --shadow-panel: 0 22px 60px rgba(31, 41, 51, 0.12);
+  --shadow-card: 0 10px 24px rgba(31, 41, 51, 0.07);
+  --shadow-hover: 0 16px 32px rgba(31, 41, 51, 0.11);
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-page);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  letter-spacing: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
