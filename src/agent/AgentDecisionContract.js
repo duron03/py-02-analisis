@@ -69,28 +69,28 @@ export function validateAgentDecision(decision) {
   if (!decision || typeof decision !== 'object') {
     return {
       isValid: false,
-      errors: ['La respuesta del agente debe ser un objeto JSON.'],
+      errors: ['El agente no envió una decisión válida. Intente consultar de nuevo.'],
     }
   }
 
   if (!AVAILABLE_ALGORITHMS.includes(decision.selectedAlgorithm)) {
-    errors.push('El algoritmo seleccionado no existe.')
+    errors.push('El agente seleccionó un algoritmo que no está disponible.')
   }
 
   if (!Number.isFinite(decision.estimatedTimeMs) || decision.estimatedTimeMs < 0) {
-    errors.push('El tiempo estimado debe ser un numero mayor o igual a cero.')
+    errors.push('El tiempo estimado del agente no es válido.')
   }
 
   if (!Number.isFinite(decision.estimatedOperations) || decision.estimatedOperations < 0) {
-    errors.push('Las operaciones estimadas deben ser un numero mayor o igual a cero.')
+    errors.push('Las operaciones estimadas del agente no son válidas.')
   }
 
   if (typeof decision.reason !== 'string' || decision.reason.trim().length === 0) {
-    errors.push('La decision debe incluir una justificacion.')
+    errors.push('La decisión del agente debe incluir una justificación.')
   }
 
   if (!Number.isFinite(decision.confidence) || decision.confidence < 0 || decision.confidence > 1) {
-    errors.push('La confianza debe ser numerica y estar entre 0 y 1.')
+    errors.push('La confianza del agente debe estar entre 0% y 100%.')
   }
 
   return {
@@ -111,18 +111,18 @@ export function validateAgentResultExplanation(explanation) {
   if (!explanation || typeof explanation !== 'object') {
     return {
       isValid: false,
-      errors: ['La explicacion del agente debe ser un objeto JSON.'],
+      errors: ['El agente no envió una explicación válida del resultado.'],
     }
   }
 
   Object.keys(AGENT_RESULT_RESPONSE_FORMAT).forEach((fieldName) => {
     if (typeof explanation[fieldName] !== 'string' || explanation[fieldName].trim().length === 0) {
-      errors.push(`La explicacion debe incluir el campo ${fieldName}.`)
+      errors.push('La explicación del agente llegó incompleta.')
     }
   })
 
   if (typeof explanation.summary === 'string' && explanation.summary.length > 500) {
-    errors.push('El resumen del agente es demasiado largo.')
+    errors.push('La explicación del agente fue demasiado extensa. Intente consultar de nuevo.')
   }
 
   return {

@@ -24,12 +24,34 @@ export class AgentDecisionService {
    */
   constructor(apiKey, model = 'gemini-2.5-flash') {
     if (!apiKey || apiKey.trim().length === 0) {
-      throw new Error('Ingrese una API key valida para consultar el agente.')
+      throw new Error('Ingrese una API key válida para consultar el agente.')
     }
 
     this.apiKey = apiKey.trim()
     this.models = [model, ...FALLBACK_MODELS.filter((fallbackModel) => fallbackModel !== model)]
     this.promptBuilder = new AgentPromptBuilder()
+  }
+
+  /**
+   * Comprueba que la API key permita consultar el modelo externo.
+   *
+   * Esta validacion no guarda la llave. Solo hace una llamada pequena al
+   * proveedor para confirmar que la sesion puede continuar.
+   *
+   * @returns {Promise<boolean>}
+   */
+  async validateAccess() {
+    const response = await this.generateJson({
+      systemPrompt: 'Responda unicamente con JSON valido.',
+      userPrompt: 'Devuelva exactamente este objeto JSON: {"ok":true}',
+      maxOutputTokens: 64,
+    })
+
+    if (response?.ok !== true && response?.ok !== 'true') {
+      throw new Error('No se pudo validar la API key. Revise que esté completa y vuelva a intentarlo.')
+    }
+
+    return true
   }
 
   /**
@@ -42,12 +64,12 @@ export class AgentDecisionService {
     const response = this.normalizeDecision(await this.generateJson({
       systemPrompt: this.promptBuilder.buildSystemPrompt(),
       userPrompt: this.promptBuilder.buildUserPrompt(request),
-      maxOutputTokens: 700,
+      maxOutputTokens: 2048,
     }))
     const validation = validateAgentDecision(response)
 
     if (!validation.isValid) {
-      throw new Error(`Respuesta invalida del agente: ${validation.errors.join(' ')}`)
+      throw new Error('El agente respondió con información incompleta. Intente consultar de nuevo.')
     }
 
     return response
@@ -63,12 +85,12 @@ export class AgentDecisionService {
     const response = this.normalizeResultExplanation(await this.generateJson({
       systemPrompt: this.promptBuilder.buildResultSystemPrompt(),
       userPrompt: this.promptBuilder.buildResultPrompt(request),
-      maxOutputTokens: 900,
+      maxOutputTokens: 2048,
     }))
     const validation = validateAgentResultExplanation(response)
 
     if (!validation.isValid) {
-      throw new Error(`Explicacion invalida del agente: ${validation.errors.join(' ')}`)
+      throw new Error('El agente no pudo generar una explicación completa del resultado.')
     }
 
     return response
@@ -110,12 +132,12 @@ export class AgentDecisionService {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(this.buildRequestBody(params)),
+      body: JSON.stringify(this.buildRequestBody(params, model)),
     })
 
     if (!response.ok) {
       const detail = await this.readErrorDetail(response)
-      const error = new Error(`No se pudo consultar el agente con ${model}. ${detail}`)
+      const error = new Error(this.createProviderErrorMessage(response.status, detail))
       error.status = response.status
       error.model = model
       error.retryable = this.shouldTryFallbackModel(response.status, detail)
@@ -127,7 +149,11 @@ export class AgentDecisionService {
 
     if (!rawText) {
       const reason = data?.promptFeedback?.blockReason
-      throw new Error(reason ? `El agente bloqueo la respuesta: ${reason}.` : 'El agente devolvio una respuesta vacia.')
+      throw new Error(
+        reason
+          ? 'El agente no pudo responder con los datos enviados. Revise el problema e intente de nuevo.'
+          : 'El agente no envió una respuesta utilizable. Intente de nuevo.',
+      )
     }
 
     return this.parseJson(rawText)
@@ -135,9 +161,22 @@ export class AgentDecisionService {
 
   /**
    * @param {{ systemPrompt: string, userPrompt: string, maxOutputTokens: number }} params
+   * @param {string} model
    * @returns {object}
    */
-  buildRequestBody(params) {
+  buildRequestBody(params, model) {
+    const generationConfig = {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+      maxOutputTokens: params.maxOutputTokens,
+    }
+
+    if (model.includes('2.5')) {
+      generationConfig.thinkingConfig = {
+        thinkingBudget: 0,
+      }
+    }
+
     return {
       systemInstruction: {
         parts: [{ text: params.systemPrompt }],
@@ -148,11 +187,7 @@ export class AgentDecisionService {
           parts: [{ text: params.userPrompt }],
         },
       ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.2,
-        maxOutputTokens: params.maxOutputTokens,
-      },
+      generationConfig,
     }
   }
 
@@ -166,13 +201,49 @@ export class AgentDecisionService {
       const message = data?.error?.message || data?.message
 
       if (message) {
-        return `Estado HTTP: ${response.status}. ${this.sanitizeMessage(message)}`
+        return this.sanitizeMessage(message)
       }
     } catch {
-      return `Estado HTTP: ${response.status}.`
+      return ''
     }
 
-    return `Estado HTTP: ${response.status}.`
+    return ''
+  }
+
+  /**
+   * Convierte errores del proveedor en mensajes aptos para la interfaz.
+   *
+   * @param {number} status
+   * @param {string} detail
+   * @returns {string}
+   */
+  createProviderErrorMessage(status, detail) {
+    const detailText = detail.toLowerCase()
+
+    if (
+      status === 400 &&
+      (detailText.includes('api key') || detailText.includes('key not valid'))
+    ) {
+      return 'La API key no parece ser válida. Revise que esté completa y vuelva a intentarlo.'
+    }
+
+    if (status === 401 || status === 403 || detailText.includes('permission')) {
+      return 'La API key no tiene permisos para consultar el agente. Revise la llave ingresada.'
+    }
+
+    if (status === 429 || detailText.includes('quota')) {
+      return 'El servicio del agente alcanzó su límite de uso por ahora. Intente nuevamente más tarde.'
+    }
+
+    if (status === 404 || detailText.includes('model')) {
+      return 'El modelo configurado no está disponible en este momento. Intente nuevamente.'
+    }
+
+    if (status >= 500) {
+      return 'El servicio del agente no está respondiendo correctamente. Intente nuevamente en unos minutos.'
+    }
+
+    return 'No se pudo completar la consulta con el agente. Revise la conexión e intente de nuevo.'
   }
 
   /**
@@ -209,7 +280,7 @@ export class AgentDecisionService {
       }
     }
 
-    throw new Error('El agente no devolvio JSON valido.')
+    throw new Error('El agente respondió con un formato que la aplicación no pudo leer. Intente consultar de nuevo.')
   }
 
   /**
@@ -320,7 +391,7 @@ export class AgentDecisionService {
     return {
       ...decision,
       selectedAlgorithm: this.normalizeAlgorithmId(decision?.selectedAlgorithm),
-      estimatedTimeMs: this.toNumber(decision?.estimatedTimeMs),
+      estimatedTimeMs: Math.max(1, this.toNumber(decision?.estimatedTimeMs)),
       estimatedOperations: this.toNumber(decision?.estimatedOperations),
       confidence: this.toNumber(decision?.confidence),
       reason: String(decision?.reason || '').trim(),

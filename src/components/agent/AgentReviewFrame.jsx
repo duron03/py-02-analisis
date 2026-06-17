@@ -14,19 +14,6 @@ function AgentReviewFrame({
   onConfirmExecution,
 }) {
   const algorithmId = agentDecision?.selectedAlgorithm || selectedAlgorithm
-  const agentOutput = agentDecision
-    ? JSON.stringify(
-        {
-          selectedAlgorithm: agentDecision.selectedAlgorithm,
-          estimatedTimeMs: agentDecision.estimatedTimeMs,
-          estimatedOperations: agentDecision.estimatedOperations,
-          confidence: agentDecision.confidence,
-          reason: agentDecision.reason,
-        },
-        null,
-        2,
-      )
-    : '{}'
 
   return (
     <main className="app-page review-page">
@@ -81,11 +68,6 @@ function AgentReviewFrame({
           <MetricRow label="Objetos" value={items.length} />
           <MetricRow label="Capacidad" value={formatNumber(capacity)} />
           <MetricRow label="Peso total disponible" value={formatNumber(totals.weight)} />
-        </article>
-
-        <article className="app-card agent-output-card">
-          <p className="eyebrow">Salida estructurada</p>
-          <pre className="json-output">{agentOutput}</pre>
         </article>
       </section>
     </main>

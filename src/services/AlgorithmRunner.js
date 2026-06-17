@@ -54,10 +54,9 @@ export class AlgorithmRunner {
     const solver = this.solvers.find((currentSolver) => currentSolver.getId() === algorithmId)
 
     if (!solver) {
-      throw new Error(`No existe un algoritmo con id: ${algorithmId}`)
+      throw new Error('No se encontró el algoritmo seleccionado.')
     }
 
     return solver
   }
 }
-

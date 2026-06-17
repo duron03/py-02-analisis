@@ -170,6 +170,16 @@ function buildPerformanceComparison(decision, result) {
 
 function getAgentErrorMessage(error) {
   if (error instanceof Error && error.message) {
+    const lowerMessage = error.message.toLowerCase()
+
+    if (
+      lowerMessage.includes('failed to fetch') ||
+      lowerMessage.includes('networkerror') ||
+      lowerMessage.includes('load failed')
+    ) {
+      return 'No se pudo conectar con el servicio del agente. Revise su conexión e intente de nuevo.'
+    }
+
     return error.message
   }
 
@@ -253,7 +263,7 @@ function App() {
             } catch (error) {
               nextMessage = {
                 tipo: 'advertencia',
-                texto: `${nextMessage.texto} No se pudo obtener la explicación final del agente: ${getAgentErrorMessage(error)}`,
+                texto: `${nextMessage.texto} No se pudo generar la explicación final del agente. ${getAgentErrorMessage(error)}`,
               }
             }
           }
@@ -267,16 +277,16 @@ function App() {
           setRunCounter((currentValue) => currentValue + 1)
           setMessage(nextMessage)
           setFrame(FRAMES.RESULTS)
-        } catch (error) {
+        } catch {
           if (shouldIgnoreResult) {
             return
           }
 
           setMessage({
             tipo: 'error',
-            texto: error instanceof Error ? error.message : 'No se pudo ejecutar el algoritmo.',
+            texto: 'No se pudo completar la ejecución local. Revise los datos del problema e intente de nuevo.',
           })
-          setFrame(FRAMES.AGENT_REVIEW)
+          setFrame(FRAMES.SETUP)
         }
       }
 
@@ -319,10 +329,12 @@ function App() {
     clearOutputs()
   }
 
-  function handleLoginSubmit(event) {
+  async function handleLoginSubmit(event) {
     event.preventDefault()
 
-    if (apiKey.trim().length === 0) {
+    const nextApiKey = apiKey.trim()
+
+    if (nextApiKey.length === 0) {
       setLoginMessage({
         tipo: 'error',
         texto: 'Ingrese una API key válida.',
@@ -330,13 +342,34 @@ function App() {
       return
     }
 
-    setApiKey(apiKey.trim())
     setLoginMessage(createMessage())
-    goToLoading(
-      'Validando acceso',
-      'Conectando...',
-      FRAMES.WELCOME,
-    )
+    setTransition({
+      title: 'Validando acceso',
+      detail: 'Comprobando API key.',
+      nextFrame: null,
+      delayMs: 0,
+    })
+    setFrame(FRAMES.LOADING)
+
+    try {
+      const service = createAgentService(nextApiKey)
+      await service.validateAccess()
+
+      setApiKey(nextApiKey)
+      goToLoading(
+        'Acceso validado',
+        'Preparando sesión.',
+        FRAMES.WELCOME,
+        700,
+      )
+    } catch (error) {
+      setTransition(null)
+      setFrame(FRAMES.LOGIN)
+      setLoginMessage({
+        tipo: 'error',
+        texto: getAgentErrorMessage(error),
+      })
+    }
   }
 
   function handleLogout() {
@@ -359,6 +392,21 @@ function App() {
   function handleNewAttempt() {
     resetProblem()
     setFrame(FRAMES.SETUP)
+  }
+
+  function handleAdjustProblem() {
+    clearOutputs()
+    setFrame(FRAMES.SETUP)
+  }
+
+  function handleReturnToSetup() {
+    clearOutputs()
+    setFrame(FRAMES.SETUP)
+  }
+
+  function handleReturnToWelcome() {
+    clearOutputs()
+    setFrame(FRAMES.WELCOME)
   }
 
   function handleItemCountChange(event) {
@@ -416,18 +464,14 @@ function App() {
 
     if (isBlankInput(value)) {
       setTimeLimitSeconds('')
-      setAgentDecision(null)
-      setAgentResultExplanation(null)
-      setMessage(createMessage())
+      clearOutputs()
       return
     }
 
     setTimeLimitSeconds(
       clampInputValue(value, MIN_TIME_LIMIT_SECONDS, MAX_TIME_LIMIT_SECONDS, MIN_TIME_LIMIT_SECONDS),
     )
-    setAgentDecision(null)
-    setAgentResultExplanation(null)
-    setMessage(createMessage())
+    clearOutputs()
   }
 
   function handleTimeLimitBlur() {
@@ -443,16 +487,12 @@ function App() {
         MIN_TIME_LIMIT_SECONDS,
       ),
     )
-    setAgentDecision(null)
-    setAgentResultExplanation(null)
-    setMessage(createMessage())
+    clearOutputs()
   }
 
   function handlePriorityChange(nextPriority) {
     setPriority(nextPriority)
-    setAgentDecision(null)
-    setAgentResultExplanation(null)
-    setMessage(createMessage())
+    clearOutputs()
   }
 
   function handleItemChange(index, field, value) {
@@ -688,7 +728,7 @@ function App() {
         agentDecision={agentDecision}
         capacity={capacity}
         items={items}
-        onBack={() => setFrame(FRAMES.SETUP)}
+        onBack={handleReturnToSetup}
         onConfirmExecution={handleConfirmAgentExecution}
         priority={priority}
         selectedAlgorithm={selectedAlgorithm}
@@ -717,7 +757,7 @@ function App() {
         items={items}
         maxItemValue={maxItemValue}
         message={message}
-        onAdjustProblem={() => setFrame(FRAMES.SETUP)}
+        onAdjustProblem={handleAdjustProblem}
         onNewAttempt={handleNewAttempt}
         selectedAlgorithmInfo={selectedAlgorithmInfo}
         selectedItemIds={selectedItemIds}
@@ -739,7 +779,7 @@ function App() {
       minItems={MIN_ITEMS}
       minTimeLimitSeconds={MIN_TIME_LIMIT_SECONDS}
       onAskAgent={handleAskAgent}
-      onBack={() => setFrame(FRAMES.WELCOME)}
+      onBack={handleReturnToWelcome}
       onCapacityBlur={handleCapacityBlur}
       onCapacityChange={handleCapacityChange}
       onGenerateRandomProblem={handleGenerateRandomProblem}

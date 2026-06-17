@@ -27,9 +27,6 @@ function ResultsFrame({
   const realTimeWidth = `${Math.max(4, (realTime / timeMax) * 100)}%`
   const estimatedOperationsWidth = `${Math.max(4, (Number(estimatedOperations || 0) / operationsMax) * 100)}%`
   const realOperationsWidth = `${Math.max(4, (realOperations / operationsMax) * 100)}%`
-  const explanationOutput = agentResultExplanation
-    ? JSON.stringify(agentResultExplanation, null, 2)
-    : null
 
   return (
     <main className="app-page knapsack-page">
@@ -69,7 +66,7 @@ function ResultsFrame({
       </section>
 
       <section className="app-grid results-grid" aria-label="Resultados y métricas">
-        <section className="app-section">
+        <section className="result-block">
           <div className="section-heading">
             <h2>Objetos seleccionados</h2>
             <span>{solution?.algorithmName}</span>
@@ -106,33 +103,9 @@ function ResultsFrame({
               )}
             </div>
           </article>
-
-          <div className="section-heading">
-            <h2>Visualización</h2>
-            <span>Valor por objeto</span>
-          </div>
-
-          <article className="app-card chart-card">
-            {items.map((item, index) => {
-              const isSelected = selectedItemIds.has(index + 1)
-              const barWidth = `${Math.max(6, (Number(item.value || 0) / maxItemValue) * 100)}%`
-
-              return (
-                <div className={isSelected ? 'chart-row selected' : 'chart-row'} key={item.id}>
-                  <div className="chart-label">
-                    <strong>{item.name}</strong>
-                    <span>{formatNumber(item.value)} pts</span>
-                  </div>
-                  <div className="chart-track">
-                    <span className="chart-fill" style={{ width: barWidth }} />
-                  </div>
-                </div>
-              )
-            })}
-          </article>
         </section>
 
-        <section className="app-section">
+        <section className="result-block">
           <div className="section-heading">
             <h2>Estadísticas</h2>
             <span>{executionRequest?.mode === 'agent' ? 'Agente vs local' : 'Manual'}</span>
@@ -163,10 +136,41 @@ function ResultsFrame({
             <MetricRow label="Complejidad temporal" value={selectedAlgorithmInfo?.complexity.time} />
             <MetricRow label="Complejidad espacial" value={selectedAlgorithmInfo?.complexity.space} />
           </article>
+        </section>
+
+        <section className="result-block">
+          <div className="section-heading">
+            <h2>Visualización</h2>
+            <span>Valor por objeto</span>
+          </div>
+
+          <article className="app-card chart-card">
+            {items.map((item, index) => {
+              const isSelected = selectedItemIds.has(index + 1)
+              const barWidth = `${Math.max(6, (Number(item.value || 0) / maxItemValue) * 100)}%`
+
+              return (
+                <div className={isSelected ? 'chart-row selected' : 'chart-row'} key={item.id}>
+                  <div className="chart-label">
+                    <strong>{item.name}</strong>
+                    <span>{formatNumber(item.value)} pts</span>
+                  </div>
+                  <div className="chart-track">
+                    <span className="chart-fill" style={{ width: barWidth }} />
+                  </div>
+                </div>
+              )
+            })}
+          </article>
+        </section>
+
+        <section className="result-block">
+          <div className="section-heading">
+            <h2>Comparación de rendimiento</h2>
+            <span>Estimado vs real</span>
+          </div>
 
           <article className="app-card comparison-card">
-            <p className="eyebrow">Comparación de rendimiento</p>
-
             <div className="comparison-block">
               <div className="comparison-heading">
                 <strong>Tiempo de ejecución</strong>
@@ -209,38 +213,37 @@ function ResultsFrame({
               </div>
             </div>
           </article>
-
-          <article className="app-card agent-analysis-card">
-            <p className="eyebrow">Explicación del agente</p>
-
-            {agentResultExplanation ? (
-              <>
-                <div className="analysis-list">
-                  <div>
-                    <strong>Resumen</strong>
-                    <p>{agentResultExplanation.summary}</p>
-                  </div>
-                  <div>
-                    <strong>Estimación contra ejecución</strong>
-                    <p>{agentResultExplanation.estimateComparison}</p>
-                  </div>
-                  <div>
-                    <strong>Calidad de la solución</strong>
-                    <p>{agentResultExplanation.resultQuality}</p>
-                  </div>
-                  <div>
-                    <strong>Recomendación</strong>
-                    <p>{agentResultExplanation.recommendation}</p>
-                  </div>
-                </div>
-
-                <pre className="json-output">{explanationOutput}</pre>
-              </>
-            ) : (
-              <p className="empty-state">No se recibió explicación final del agente.</p>
-            )}
-          </article>
         </section>
+
+        <article className="app-card agent-analysis-card">
+          <p className="eyebrow analysis-heading">
+            <span>Explicación del agente</span>
+            <span className="sparkle-icon" aria-hidden="true" />
+          </p>
+
+          {agentResultExplanation ? (
+            <div className="analysis-list">
+              <div>
+                <strong>Resumen</strong>
+                <p>{agentResultExplanation.summary}</p>
+              </div>
+              <div>
+                <strong>Estimación contra ejecución</strong>
+                <p>{agentResultExplanation.estimateComparison}</p>
+              </div>
+              <div>
+                <strong>Calidad de la solución</strong>
+                <p>{agentResultExplanation.resultQuality}</p>
+              </div>
+              <div>
+                <strong>Recomendación</strong>
+                <p>{agentResultExplanation.recommendation}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="empty-state">No se recibió explicación final del agente.</p>
+          )}
+        </article>
       </section>
     </main>
   )
