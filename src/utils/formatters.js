@@ -21,7 +21,7 @@ export function formatNumber(value) {
 export function formatAlgorithmName(algorithmId) {
   const names = {
     backtracking: 'Backtracking',
-    'dynamic-programming': 'Programacion Dinamica',
+    'dynamic-programming': 'Programación Dinámica',
     greedy: 'Greedy por densidad',
   }
 
@@ -34,13 +34,12 @@ export function formatAlgorithmName(algorithmId) {
  */
 export function formatPriority(priority) {
   if (priority === 'accuracy') {
-    return 'Maxima Exactitud'
+    return 'Máxima Exactitud'
   }
 
   if (priority === 'speed') {
-    return 'Velocidad Maxima'
+    return 'Velocidad Máxima'
   }
 
   return priority
 }
-

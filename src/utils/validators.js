@@ -26,7 +26,7 @@ export function validateProblemInput(problemInput) {
   if (!problemInput || typeof problemInput !== 'object') {
     return {
       isValid: false,
-      errors: ['El problema debe ser un objeto.'],
+      errors: ['No se pudo leer la información del problema. Revise los datos ingresados.'],
     }
   }
 
@@ -65,7 +65,7 @@ export function validateConstraints(constraints) {
   const allowedPriorities = ['accuracy', 'speed']
 
   if (!allowedPriorities.includes(constraints.priority)) {
-    errors.push('La prioridad debe ser accuracy o speed.')
+    errors.push('Seleccione una prioridad válida.')
   }
 
   if (
@@ -73,7 +73,7 @@ export function validateConstraints(constraints) {
     !Number.isFinite(Number(constraints.timeLimitSeconds)) ||
     Number(constraints.timeLimitSeconds) <= 0
   ) {
-    errors.push('El tiempo limite debe ser mayor que cero.')
+    errors.push('El tiempo límite debe ser mayor que cero.')
   }
 
   return {

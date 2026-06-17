@@ -9,7 +9,7 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
   constructor() {
     super()
     this.id = 'dynamic-programming'
-    this.name = 'Programacion Dinamica'
+    this.name = 'Programación Dinámica'
   }
 
   /**
@@ -82,4 +82,3 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
     }
   }
 }
-

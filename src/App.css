@@ -583,6 +583,12 @@ tbody tr.selected-row {
   align-items: start;
 }
 
+.results-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 500px 360px auto;
+  align-items: stretch;
+}
+
 .welcome-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
@@ -597,6 +603,17 @@ tbody tr.selected-row {
   gap: 12px;
 }
 
+.result-block {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.result-block > .app-card {
+  min-height: 0;
+}
+
 .decision-card,
 .solution-card,
 .metrics-card,
@@ -604,13 +621,12 @@ tbody tr.selected-row {
 .flow-card,
 .strategy-list,
 .comparison-card,
-.agent-analysis-card,
-.agent-output-card {
+.agent-analysis-card {
   display: grid;
   gap: 12px;
 }
 
-.agent-output-card {
+.agent-analysis-card {
   grid-column: 1 / -1;
 }
 
@@ -693,6 +709,10 @@ tbody tr.selected-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface);
 }
 
 .solution-main div,
@@ -722,6 +742,9 @@ tbody tr.selected-row {
 .selected-list {
   display: grid;
   gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .selected-item {
@@ -739,6 +762,30 @@ tbody tr.selected-row {
 .metric-row strong {
   overflow-wrap: anywhere;
   text-align: right;
+}
+
+.solution-card,
+.chart-card,
+.comparison-card {
+  min-height: 0;
+  overflow: auto;
+}
+
+.metrics-card {
+  align-content: start;
+  min-height: 0;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.metrics-card .metric-row {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.solution-card {
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .chart-card {
@@ -845,6 +892,7 @@ tbody tr.selected-row {
 .analysis-list {
   display: grid;
   gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .analysis-list div {
@@ -864,20 +912,40 @@ tbody tr.selected-row {
   margin: 0;
 }
 
-.json-output {
-  max-height: 240px;
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  margin: 0;
-  padding: 12px;
-  background: #111827;
-  color: #f9fafb;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-  font-size: 0.82rem;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
+.analysis-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sparkle-icon {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text);
+}
+
+.sparkle-icon::before,
+.sparkle-icon::after {
+  position: absolute;
+  background: currentColor;
+  clip-path: polygon(50% 0, 62% 36%, 100% 50%, 62% 64%, 50% 100%, 38% 64%, 0 50%, 38% 36%);
+  content: '';
+}
+
+.sparkle-icon::before {
+  top: 1px;
+  left: 6px;
+  width: 10px;
+  height: 10px;
+}
+
+.sparkle-icon::after {
+  top: 11px;
+  left: 1px;
+  width: 6px;
+  height: 6px;
 }
 
 .app-header,
@@ -971,6 +1039,10 @@ tbody tr.selected-row {
     grid-template-columns: 1fr;
   }
 
+  .results-grid {
+    grid-template-rows: none;
+  }
+
   .welcome-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -984,6 +1056,7 @@ tbody tr.selected-row {
 
   .problem-grid,
   .app-grid,
+  .analysis-list,
   .solution-main {
     grid-template-columns: 1fr;
   }
