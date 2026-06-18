@@ -196,6 +196,26 @@ td input {
     transform 0.2s var(--motion-ease);
 }
 
+.field input.invalid-input {
+  border-color: rgba(220, 38, 38, 0.58);
+  background: rgba(220, 38, 38, 0.035);
+}
+
+.field input.invalid-input:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.field-help {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.field-help.invalid {
+  color: var(--color-error);
+}
+
 td input {
   min-height: 42px;
   padding: 8px 10px;
@@ -454,7 +474,8 @@ td input:focus {
   padding: 16px;
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
-  max-height: 380px;
+  min-height: 440px;
+  max-height: 440px;
 }
 
 .problem-form {
@@ -465,9 +486,7 @@ td input:focus {
 .table-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  max-height: min(68vh, 680px);
   overflow: hidden;
-  max-height: 380px;
 }
 
 .table-heading {
