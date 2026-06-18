@@ -9,7 +9,10 @@ export class KnapsackSolution {
    *   algorithmId: string,
    *   executionTimeMs: number,
    *   operationCount: number,
-   *   isOptimal: boolean
+   *   isOptimal: boolean,
+   *   wasInterrupted?: boolean,
+   *   interruptionReason?: string,
+   *   timeLimitMs?: number
    * }} data
    */
   constructor(data) {
@@ -19,6 +22,9 @@ export class KnapsackSolution {
     this.executionTimeMs = data.executionTimeMs || 0
     this.operationCount = data.operationCount || 0
     this.isOptimal = Boolean(data.isOptimal)
+    this.wasInterrupted = Boolean(data.wasInterrupted)
+    this.interruptionReason = data.interruptionReason || ''
+    this.timeLimitMs = Number(data.timeLimitMs || 0)
     this.calculateTotals()
   }
 
@@ -45,7 +51,10 @@ export class KnapsackSolution {
    *   totalValue: number,
    *   executionTimeMs: number,
    *   operationCount: number,
-   *   isOptimal: boolean
+   *   isOptimal: boolean,
+   *   wasInterrupted: boolean,
+   *   interruptionReason: string,
+   *   timeLimitMs: number
    * }}
    */
   toPlainObject() {
@@ -60,7 +69,9 @@ export class KnapsackSolution {
       executionTimeMs: this.executionTimeMs,
       operationCount: this.operationCount,
       isOptimal: this.isOptimal,
+      wasInterrupted: this.wasInterrupted,
+      interruptionReason: this.interruptionReason,
+      timeLimitMs: this.timeLimitMs,
     }
   }
 }
-
