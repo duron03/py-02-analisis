@@ -15,6 +15,7 @@ import WelcomeFrame from './components/welcome/WelcomeFrame.jsx'
 import { sampleProblems } from './data/sampleProblems.js'
 import { AgentDecisionService } from './services/AgentDecisionService.js'
 import { AlgorithmRunner } from './services/AlgorithmRunner.js'
+import { AlgorithmWorkerService } from './services/AlgorithmWorkerService.js'
 import { generateRandomProblem } from './utils/randomProblemGenerator.js'
 import { validateConstraints, validateProblemInput } from './utils/validators.js'
 
@@ -37,6 +38,7 @@ const FRAMES = {
 }
 
 const algorithmRunner = new AlgorithmRunner()
+const algorithmWorkerService = new AlgorithmWorkerService()
 
 function createMessage() {
   return {
@@ -73,12 +75,16 @@ function isBlankInput(value) {
 }
 
 function isIntegerInput(value) {
-  return !isBlankInput(value) && Number.isInteger(Number(value))
+  return !isBlankInput(value) && /^\d+$/.test(String(value)) && Number.isInteger(Number(value))
 }
 
 function isIntegerInRange(value, min, max) {
   const numberValue = Number(value)
   return isIntegerInput(value) && numberValue >= min && numberValue <= max
+}
+
+function getOnlyDigits(value) {
+  return value.replace(/\D/g, '')
 }
 
 function clampInputValue(value, min, max, fallback) {
@@ -232,20 +238,30 @@ function App() {
     }
 
     let shouldIgnoreResult = false
+    const executionController = new AbortController()
 
     const timer = setTimeout(() => {
       async function runLocalExecution() {
         try {
-          const result = algorithmRunner.run(
+          const result = await algorithmWorkerService.run(
             executionRequest.problem,
             executionRequest.algorithmId,
+            {
+              timeLimitMs: executionRequest.constraints.timeLimitSeconds * 1000,
+              signal: executionController.signal,
+            },
           )
 
           let nextExplanation = null
-          let nextMessage = {
-            tipo: 'exito',
-            texto: 'La ejecución local finalizó correctamente.',
-          }
+          let nextMessage = result.wasInterrupted
+            ? {
+                tipo: 'advertencia',
+                texto: 'La ejecución local se detuvo al alcanzar el tiempo límite tolerable. Se muestra la mejor solución encontrada hasta ese momento.',
+              }
+            : {
+                tipo: 'exito',
+                texto: 'La ejecución local finalizó correctamente.',
+              }
 
           if (executionRequest.mode === 'agent' && agentDecision) {
             try {
@@ -295,6 +311,7 @@ function App() {
 
     return () => {
       shouldIgnoreResult = true
+      executionController.abort()
       clearTimeout(timer)
     }
   }, [agentDecision, apiKey, executionRequest, frame])
@@ -410,83 +427,27 @@ function App() {
   }
 
   function handleItemCountChange(event) {
-    const value = event.target.value
+    const value = getOnlyDigits(event.target.value)
+
+    setItemCountInput(value)
+    clearOutputs()
 
     if (isBlankInput(value)) {
-      setItemCountInput('')
-      clearOutputs()
       return
     }
 
-    const nextCount = clampInteger(value, MIN_ITEMS, MAX_ITEMS, items.length)
-
-    setItemCountInput(String(nextCount))
-    setItems((currentItems) => resizeItems(currentItems, nextCount))
-    clearOutputs()
-  }
-
-  function handleItemCountBlur() {
-    if (isBlankInput(itemCountInput)) {
-      return
+    if (isIntegerInRange(value, MIN_ITEMS, MAX_ITEMS)) {
+      setItems((currentItems) => resizeItems(currentItems, Number(value)))
     }
-
-    const nextCount = clampInteger(itemCountInput, MIN_ITEMS, MAX_ITEMS, items.length)
-
-    setItemCountInput(String(nextCount))
-    setItems((currentItems) => resizeItems(currentItems, nextCount))
-    clearOutputs()
   }
 
   function handleCapacityChange(event) {
-    const value = event.target.value
-
-    if (isBlankInput(value)) {
-      setCapacity('')
-      clearOutputs()
-      return
-    }
-
-    setCapacity(clampInputValue(value, MIN_CAPACITY, MAX_CAPACITY, MIN_CAPACITY))
-    clearOutputs()
-  }
-
-  function handleCapacityBlur() {
-    if (isBlankInput(capacity)) {
-      return
-    }
-
-    setCapacity(clampInputValue(capacity, MIN_CAPACITY, MAX_CAPACITY, MIN_CAPACITY))
+    setCapacity(getOnlyDigits(event.target.value))
     clearOutputs()
   }
 
   function handleTimeLimitChange(event) {
-    const value = event.target.value
-
-    if (isBlankInput(value)) {
-      setTimeLimitSeconds('')
-      clearOutputs()
-      return
-    }
-
-    setTimeLimitSeconds(
-      clampInputValue(value, MIN_TIME_LIMIT_SECONDS, MAX_TIME_LIMIT_SECONDS, MIN_TIME_LIMIT_SECONDS),
-    )
-    clearOutputs()
-  }
-
-  function handleTimeLimitBlur() {
-    if (isBlankInput(timeLimitSeconds)) {
-      return
-    }
-
-    setTimeLimitSeconds(
-      clampInputValue(
-        timeLimitSeconds,
-        MIN_TIME_LIMIT_SECONDS,
-        MAX_TIME_LIMIT_SECONDS,
-        MIN_TIME_LIMIT_SECONDS,
-      ),
-    )
+    setTimeLimitSeconds(getOnlyDigits(event.target.value))
     clearOutputs()
   }
 
@@ -780,15 +741,12 @@ function App() {
       minTimeLimitSeconds={MIN_TIME_LIMIT_SECONDS}
       onAskAgent={handleAskAgent}
       onBack={handleReturnToWelcome}
-      onCapacityBlur={handleCapacityBlur}
       onCapacityChange={handleCapacityChange}
       onGenerateRandomProblem={handleGenerateRandomProblem}
       onItemBlur={handleItemBlur}
       onItemChange={handleItemChange}
-      onItemCountBlur={handleItemCountBlur}
       onItemCountChange={handleItemCountChange}
       onPriorityChange={handlePriorityChange}
-      onTimeLimitBlur={handleTimeLimitBlur}
       onTimeLimitChange={handleTimeLimitChange}
       priority={priority}
       timeLimitSeconds={timeLimitSeconds}

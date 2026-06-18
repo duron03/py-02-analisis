@@ -2,6 +2,14 @@ import { formatMilliseconds, formatNumber } from '../../utils/formatters.js'
 import MetricRow from '../common/MetricRow.jsx'
 import SummaryCard from '../common/SummaryCard.jsx'
 
+function getSolutionType(solution) {
+  if (solution?.wasInterrupted) {
+    return 'Parcial'
+  }
+
+  return solution?.isOptimal ? 'Óptima' : 'Heurística'
+}
+
 function ResultsFrame({
   agentDecision,
   agentResultExplanation,
@@ -61,7 +69,7 @@ function ResultsFrame({
         />
         <SummaryCard
           label="Tipo de solución"
-          value={solution?.isOptimal ? 'Óptima' : 'Heurística'}
+          value={getSolutionType(solution)}
         />
       </section>
 
@@ -120,6 +128,10 @@ function ResultsFrame({
             <MetricRow
               label="Tiempo real local"
               value={solution ? formatMilliseconds(solution.executionTimeMs) : 'Pendiente'}
+            />
+            <MetricRow
+              label="Estado de ejecución"
+              value={solution?.wasInterrupted ? 'Interrumpida por tiempo' : 'Completada'}
             />
             <MetricRow
               label="Diferencia"

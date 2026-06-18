@@ -171,7 +171,7 @@ p {
 .field-group,
 .field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field-label,
@@ -194,6 +194,26 @@ td input {
     border-color 0.2s var(--motion-ease),
     box-shadow 0.2s var(--motion-ease),
     transform 0.2s var(--motion-ease);
+}
+
+.field input.invalid-input {
+  border-color: rgba(220, 38, 38, 0.58);
+  background: rgba(220, 38, 38, 0.035);
+}
+
+.field input.invalid-input:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.field-help {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.field-help.invalid {
+  color: var(--color-error);
 }
 
 td input {
@@ -454,20 +474,19 @@ td input:focus {
   padding: 16px;
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
-  max-height: 380px;
+  min-height: 435px;
+  max-height: 435px;
 }
 
 .problem-form {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .table-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  max-height: min(68vh, 680px);
   overflow: hidden;
-  max-height: 380px;
 }
 
 .table-heading {
@@ -585,7 +604,7 @@ tbody tr.selected-row {
 
 .results-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: 500px 360px auto;
+  grid-template-rows: 540px 360px auto;
   align-items: stretch;
 }
 
@@ -1126,6 +1145,16 @@ tbody tr.selected-row {
 
   .priority-controls {
     grid-template-columns: 1fr;
+  }
+
+  .problem-panel {
+    min-height: auto;
+    max-height: none;
+  }
+
+  .table-panel {
+    min-height: 470px;
+    max-height: 470px;
   }
 
   .chart-row {

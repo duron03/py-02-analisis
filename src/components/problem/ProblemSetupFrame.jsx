@@ -3,7 +3,13 @@ import { formatNumber } from '../../utils/formatters.js'
 import SummaryCard from '../common/SummaryCard.jsx'
 
 function isIntegerInput(value) {
-  return value !== '' && value !== null && value !== undefined && Number.isInteger(Number(value))
+  return (
+    value !== '' &&
+    value !== null &&
+    value !== undefined &&
+    /^\d+$/.test(String(value)) &&
+    Number.isInteger(Number(value))
+  )
 }
 
 function isIntegerInRange(value, min, max) {
@@ -13,6 +19,10 @@ function isIntegerInRange(value, min, max) {
 
 function formatPendingNumber(value, isValid) {
   return isValid ? formatNumber(value) : 'Pendiente'
+}
+
+function getFieldHelpClass(isValid) {
+  return isValid ? 'field-help' : 'field-help invalid'
 }
 
 function ProblemSetupFrame({
@@ -31,21 +41,24 @@ function ProblemSetupFrame({
   minTimeLimitSeconds,
   onAskAgent,
   onBack,
-  onCapacityBlur,
   onCapacityChange,
   onGenerateRandomProblem,
   onItemBlur,
   onItemChange,
-  onItemCountBlur,
   onItemCountChange,
   onPriorityChange,
-  onTimeLimitBlur,
   onTimeLimitChange,
 }) {
   const itemCountIsValid = isIntegerInRange(itemCountInput, minItems, maxItems)
   const capacityIsValid = isIntegerInRange(capacity, minCapacity, maxCapacity)
+  const timeLimitIsValid = isIntegerInRange(
+    timeLimitSeconds,
+    minTimeLimitSeconds,
+    maxTimeLimitSeconds,
+  )
   const weightTotalIsReady = totals.weightIsComplete
   const valueTotalIsReady = totals.valueIsComplete
+  const executionParamsAreValid = itemCountIsValid && capacityIsValid && timeLimitIsValid
 
   return (
     <main className="app-page knapsack-page">
@@ -63,11 +76,11 @@ function ProblemSetupFrame({
         <SummaryCard
           featured
           label="Objetos"
-          value={itemCountIsValid ? formatNumber(items.length) : 'Pendiente'}
+          value={itemCountIsValid ? formatNumber(Number(itemCountInput)) : 'Pendiente'}
         />
         <SummaryCard
           label="Capacidad W"
-          value={formatPendingNumber(capacity, capacityIsValid)}
+          value={formatPendingNumber(Number(capacity), capacityIsValid)}
         />
         <SummaryCard
           label="Peso total disponible"
@@ -90,7 +103,12 @@ function ProblemSetupFrame({
             >
               Generar objetos
             </button>
-            <button className="primary-button compact-button" onClick={onAskAgent} type="button">
+            <button
+              className="primary-button compact-button"
+              disabled={!executionParamsAreValid}
+              onClick={onAskAgent}
+              type="button"
+            >
               Consultar agente
             </button>
           </div>
@@ -106,37 +124,46 @@ function ProblemSetupFrame({
               <label className="field">
                 <span>Cantidad de objetos</span>
                 <input
-                  max={maxItems}
-                  min={minItems}
+                  className={itemCountIsValid ? '' : 'invalid-input'}
+                  inputMode="numeric"
                   onChange={onItemCountChange}
-                  onBlur={onItemCountBlur}
-                  type="number"
+                  pattern="[0-9]*"
+                  type="text"
                   value={itemCountInput}
                 />
+                <small className={getFieldHelpClass(itemCountIsValid)}>
+                  Ingrese un entero entre {minItems} y {maxItems}.
+                </small>
               </label>
 
               <label className="field">
                 <span>Capacidad máxima W</span>
                 <input
-                  max={maxCapacity}
-                  min={minCapacity}
-                  onBlur={onCapacityBlur}
+                  className={capacityIsValid ? '' : 'invalid-input'}
+                  inputMode="numeric"
                   onChange={onCapacityChange}
-                  type="number"
+                  pattern="[0-9]*"
+                  type="text"
                   value={capacity}
                 />
+                <small className={getFieldHelpClass(capacityIsValid)}>
+                  Ingrese un entero entre {minCapacity} y {maxCapacity}.
+                </small>
               </label>
 
               <label className="field">
                 <span>Tiempo límite tolerable (segundos)</span>
                 <input
-                  max={maxTimeLimitSeconds}
-                  min={minTimeLimitSeconds}
-                  onBlur={onTimeLimitBlur}
+                  className={timeLimitIsValid ? '' : 'invalid-input'}
+                  inputMode="numeric"
                   onChange={onTimeLimitChange}
-                  type="number"
+                  pattern="[0-9]*"
+                  type="text"
                   value={timeLimitSeconds}
                 />
+                <small className={getFieldHelpClass(timeLimitIsValid)}>
+                  Ingrese un entero entre {minTimeLimitSeconds} y {maxTimeLimitSeconds} segundos.
+                </small>
               </label>
 
               <div className="field-group">

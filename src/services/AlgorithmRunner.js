@@ -33,15 +33,16 @@ export class AlgorithmRunner {
    *
    * @param {object|KnapsackProblem} problemInput
    * @param {string} algorithmId
+   * @param {{ timeLimitMs?: number, checkInterval?: number }} [options]
    * @returns {object}
    */
-  run(problemInput, algorithmId) {
+  run(problemInput, algorithmId, options = {}) {
     const problem =
       problemInput instanceof KnapsackProblem
         ? problemInput.clone()
         : new KnapsackProblem(problemInput)
     const solver = this.findSolver(algorithmId)
-    const solution = solver.solve(problem)
+    const solution = solver.solve(problem, options)
 
     return solution.toPlainObject()
   }

@@ -1,4 +1,5 @@
 import { KnapsackSolution } from '../domain/KnapsackSolution.js'
+import { ExecutionControl } from '../services/ExecutionControl.js'
 import { PerformanceTimer } from '../services/PerformanceTimer.js'
 import { KnapsackSolver } from './KnapsackSolver.js'
 
@@ -16,15 +17,20 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
    * Resuelve el problema llenando una tabla de subproblemas.
    *
    * @param {import('../domain/KnapsackProblem.js').KnapsackProblem} problem
+   * @param {{ timeLimitMs?: number, checkInterval?: number }} [options]
    * @returns {KnapsackSolution}
    */
-  solve(problem) {
+  solve(problem, options = {}) {
     this.validateProblem(problem)
 
     const timer = new PerformanceTimer()
+    const executionControl = new ExecutionControl(options)
     const itemCount = problem.items.length
     const capacity = problem.capacity
     let operationCount = 0
+    let bestValue = 0
+    let bestItemIndex = 0
+    let bestCapacity = 0
 
     timer.start()
 
@@ -38,6 +44,10 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
       for (let currentCapacity = 0; currentCapacity <= capacity; currentCapacity += 1) {
         operationCount += 1
 
+        if (executionControl.shouldStop()) {
+          break
+        }
+
         if (item.weight <= currentCapacity) {
           const valueWithItem =
             item.value + table[itemIndex - 1][currentCapacity - item.weight]
@@ -46,13 +56,25 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
         } else {
           table[itemIndex][currentCapacity] = table[itemIndex - 1][currentCapacity]
         }
+
+        if (table[itemIndex][currentCapacity] > bestValue) {
+          bestValue = table[itemIndex][currentCapacity]
+          bestItemIndex = itemIndex
+          bestCapacity = currentCapacity
+        }
+      }
+
+      if (executionControl.shouldStop(true)) {
+        break
       }
     }
 
     const selectedItems = []
-    let remainingCapacity = capacity
+    const wasInterrupted = executionControl.wasInterrupted
+    let reconstructionIndex = wasInterrupted ? bestItemIndex : itemCount
+    let remainingCapacity = wasInterrupted ? bestCapacity : capacity
 
-    for (let itemIndex = itemCount; itemIndex > 0; itemIndex -= 1) {
+    for (let itemIndex = reconstructionIndex; itemIndex > 0; itemIndex -= 1) {
       if (table[itemIndex][remainingCapacity] !== table[itemIndex - 1][remainingCapacity]) {
         const item = problem.items[itemIndex - 1]
         selectedItems.push(item.clone())
@@ -68,7 +90,10 @@ export class DynamicProgrammingSolver extends KnapsackSolver {
       algorithmId: this.id,
       executionTimeMs,
       operationCount,
-      isOptimal: true,
+      isOptimal: !wasInterrupted,
+      wasInterrupted,
+      interruptionReason: wasInterrupted ? 'time-limit' : '',
+      timeLimitMs: executionControl.getTimeLimitMs(),
     })
   }
 

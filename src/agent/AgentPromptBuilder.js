@@ -48,6 +48,7 @@ export class AgentPromptBuilder {
     return [
       'Eres un agente que explica resultados de una ejecucion local del problema de la mochila 0/1.',
       'Recibiras la decision inicial del agente, la solucion local y la comparacion entre estimaciones y mediciones reales.',
+      'Si localSolution.wasInterrupted es true, explica que la solucion es parcial porque se alcanzo el tiempo limite tolerable.',
       'Explica si la estimacion fue razonable, que tipo de solucion se obtuvo y que recomendacion queda para otro intento.',
       'Responde unicamente con JSON valido y sin texto adicional.',
       'Formato exacto:',
