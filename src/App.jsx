@@ -15,6 +15,7 @@ import WelcomeFrame from './components/welcome/WelcomeFrame.jsx'
 import { sampleProblems } from './data/sampleProblems.js'
 import { AgentDecisionService } from './services/AgentDecisionService.js'
 import { AlgorithmRunner } from './services/AlgorithmRunner.js'
+import { AlgorithmWorkerService } from './services/AlgorithmWorkerService.js'
 import { generateRandomProblem } from './utils/randomProblemGenerator.js'
 import { validateConstraints, validateProblemInput } from './utils/validators.js'
 
@@ -37,6 +38,7 @@ const FRAMES = {
 }
 
 const algorithmRunner = new AlgorithmRunner()
+const algorithmWorkerService = new AlgorithmWorkerService()
 
 function createMessage() {
   return {
@@ -236,20 +238,30 @@ function App() {
     }
 
     let shouldIgnoreResult = false
+    const executionController = new AbortController()
 
     const timer = setTimeout(() => {
       async function runLocalExecution() {
         try {
-          const result = algorithmRunner.run(
+          const result = await algorithmWorkerService.run(
             executionRequest.problem,
             executionRequest.algorithmId,
+            {
+              timeLimitMs: executionRequest.constraints.timeLimitSeconds * 1000,
+              signal: executionController.signal,
+            },
           )
 
           let nextExplanation = null
-          let nextMessage = {
-            tipo: 'exito',
-            texto: 'La ejecución local finalizó correctamente.',
-          }
+          let nextMessage = result.wasInterrupted
+            ? {
+                tipo: 'advertencia',
+                texto: 'La ejecución local se detuvo al alcanzar el tiempo límite tolerable. Se muestra la mejor solución encontrada hasta ese momento.',
+              }
+            : {
+                tipo: 'exito',
+                texto: 'La ejecución local finalizó correctamente.',
+              }
 
           if (executionRequest.mode === 'agent' && agentDecision) {
             try {
@@ -299,6 +311,7 @@ function App() {
 
     return () => {
       shouldIgnoreResult = true
+      executionController.abort()
       clearTimeout(timer)
     }
   }, [agentDecision, apiKey, executionRequest, frame])
