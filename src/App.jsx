@@ -73,12 +73,16 @@ function isBlankInput(value) {
 }
 
 function isIntegerInput(value) {
-  return !isBlankInput(value) && Number.isInteger(Number(value))
+  return !isBlankInput(value) && /^\d+$/.test(String(value)) && Number.isInteger(Number(value))
 }
 
 function isIntegerInRange(value, min, max) {
   const numberValue = Number(value)
   return isIntegerInput(value) && numberValue >= min && numberValue <= max
+}
+
+function getOnlyDigits(value) {
+  return value.replace(/\D/g, '')
 }
 
 function clampInputValue(value, min, max, fallback) {
@@ -410,83 +414,27 @@ function App() {
   }
 
   function handleItemCountChange(event) {
-    const value = event.target.value
+    const value = getOnlyDigits(event.target.value)
+
+    setItemCountInput(value)
+    clearOutputs()
 
     if (isBlankInput(value)) {
-      setItemCountInput('')
-      clearOutputs()
       return
     }
 
-    const nextCount = clampInteger(value, MIN_ITEMS, MAX_ITEMS, items.length)
-
-    setItemCountInput(String(nextCount))
-    setItems((currentItems) => resizeItems(currentItems, nextCount))
-    clearOutputs()
-  }
-
-  function handleItemCountBlur() {
-    if (isBlankInput(itemCountInput)) {
-      return
+    if (isIntegerInRange(value, MIN_ITEMS, MAX_ITEMS)) {
+      setItems((currentItems) => resizeItems(currentItems, Number(value)))
     }
-
-    const nextCount = clampInteger(itemCountInput, MIN_ITEMS, MAX_ITEMS, items.length)
-
-    setItemCountInput(String(nextCount))
-    setItems((currentItems) => resizeItems(currentItems, nextCount))
-    clearOutputs()
   }
 
   function handleCapacityChange(event) {
-    const value = event.target.value
-
-    if (isBlankInput(value)) {
-      setCapacity('')
-      clearOutputs()
-      return
-    }
-
-    setCapacity(clampInputValue(value, MIN_CAPACITY, MAX_CAPACITY, MIN_CAPACITY))
-    clearOutputs()
-  }
-
-  function handleCapacityBlur() {
-    if (isBlankInput(capacity)) {
-      return
-    }
-
-    setCapacity(clampInputValue(capacity, MIN_CAPACITY, MAX_CAPACITY, MIN_CAPACITY))
+    setCapacity(getOnlyDigits(event.target.value))
     clearOutputs()
   }
 
   function handleTimeLimitChange(event) {
-    const value = event.target.value
-
-    if (isBlankInput(value)) {
-      setTimeLimitSeconds('')
-      clearOutputs()
-      return
-    }
-
-    setTimeLimitSeconds(
-      clampInputValue(value, MIN_TIME_LIMIT_SECONDS, MAX_TIME_LIMIT_SECONDS, MIN_TIME_LIMIT_SECONDS),
-    )
-    clearOutputs()
-  }
-
-  function handleTimeLimitBlur() {
-    if (isBlankInput(timeLimitSeconds)) {
-      return
-    }
-
-    setTimeLimitSeconds(
-      clampInputValue(
-        timeLimitSeconds,
-        MIN_TIME_LIMIT_SECONDS,
-        MAX_TIME_LIMIT_SECONDS,
-        MIN_TIME_LIMIT_SECONDS,
-      ),
-    )
+    setTimeLimitSeconds(getOnlyDigits(event.target.value))
     clearOutputs()
   }
 
@@ -780,15 +728,12 @@ function App() {
       minTimeLimitSeconds={MIN_TIME_LIMIT_SECONDS}
       onAskAgent={handleAskAgent}
       onBack={handleReturnToWelcome}
-      onCapacityBlur={handleCapacityBlur}
       onCapacityChange={handleCapacityChange}
       onGenerateRandomProblem={handleGenerateRandomProblem}
       onItemBlur={handleItemBlur}
       onItemChange={handleItemChange}
-      onItemCountBlur={handleItemCountBlur}
       onItemCountChange={handleItemCountChange}
       onPriorityChange={handlePriorityChange}
-      onTimeLimitBlur={handleTimeLimitBlur}
       onTimeLimitChange={handleTimeLimitChange}
       priority={priority}
       timeLimitSeconds={timeLimitSeconds}
